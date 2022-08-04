@@ -30,7 +30,7 @@ log('start');
     pageTab1.click('#start');
   };
 
-  const runRetry = async (url: string) => {
+  const runRetry = async (url: string, maxAttempts: number, pause: number) => {
     setStatus(true);
 
     const retryPages = [];
@@ -41,9 +41,13 @@ log('start');
         try {
           await page.goto(url);
           if (!getStatus()) { return; } // stop work if already stopped
-          const isBad = await isPageBad(page);
+          const isBad = await isPageBad(page, url);
           if (!getStatus()) { return; } // stop work if already stopped
           if (!isBad) { notifySuccess(); }
+          if (pause > 0) {
+            await new Promise(resolve => setTimeout(resolve, pause * 1000));
+            if (!getStatus()) { return; } // stop work if already stopped
+          }
         } catch {
           // some error during loading page (network error?)
           // so continue attempts
@@ -51,7 +55,7 @@ log('start');
       } while (true);
     };
 
-    for (let i = 0; i < MAX_PARALLEL_RETRY; i++) {
+    for (let i = 0; i < MAX_PARALLEL_RETRY && i < maxAttempts; i++) {
       retryPages.push(await browser.newPage());
     }
     for (let i = 0; i < retryPages.length; i++) {
@@ -75,9 +79,9 @@ log('start');
       <button id='start'>Play sound</button>
       <button id='stop'>Stop sound</button>
     `;
-    (window as any).retry = (url: string) => {
-      console.log('Retrying:', url);
-      (window as any).runRetry(url);
+    (window as any).retry = (url: string, maxAttempts: number = 6, pause: number = 1) => {
+      console.log(`Retrying [max attempts=${maxAttempts}, pause=${pause}]:`, url);
+      (window as any).runRetry(url, maxAttempts, pause);
     };
     
     document.getElementById('start')?.addEventListener('click', () => {
