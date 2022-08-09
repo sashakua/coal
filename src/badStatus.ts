@@ -10,6 +10,7 @@ export const isPageBad = async (page: Page, url: string) => {
     const pageText = document.querySelector('body')?.innerText;
     if (!pageText) { return true; }
     if (pageText.includes('The requested URL was rejected. Your support ID is:')) { return true; }
+    if (pageText.includes('SPRÓBUJ\nPONOWNIE\nPÓŹNIEJ')) { return true; }
   });
   return isBad;
 };
