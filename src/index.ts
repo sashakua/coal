@@ -35,20 +35,25 @@ log('start');
 
     const retryPages = [];
 
-    const retryForOnePage = async (page: Page) => {
+    const retryForOnePage = async (page: Page, index: number) => {
+      const prefix = `[page-${index}]`;
       do {
         if (!getStatus()) { return; } // stop work if already stopped
         try {
+          log(prefix, 'Last attempt at:', new Date());
           await page.goto(url);
+          log(prefix, 'Done attempt at:', new Date());
           if (!getStatus()) { return; } // stop work if already stopped
           const isBad = await isPageBad(page, url);
+          log(prefix, 'isPageBad', isBad, new Date());
           if (!getStatus()) { return; } // stop work if already stopped
           if (!isBad) { notifySuccess(); }
           if (pause > 0) {
             await new Promise(resolve => setTimeout(resolve, pause * 1000));
             if (!getStatus()) { return; } // stop work if already stopped
           }
-        } catch {
+        } catch (e) {
+          log(prefix, 'Catched some error at:', new Date(), e);
           // some error during loading page (network error?)
           // so continue attempts
         }
@@ -59,7 +64,7 @@ log('start');
       retryPages.push(await browser.newPage());
     }
     for (let i = 0; i < retryPages.length; i++) {
-      retryForOnePage(retryPages[i]);
+      retryForOnePage(retryPages[i], i);
     }
 
   };
