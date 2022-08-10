@@ -26,12 +26,19 @@ const posts = new Map();
 const statuses = new Map();
 const statusesMajor = new Map();
 const knownPages = new Set();
+const lastKnownUrl = new Map();
+let lastPagesStatus = '';
+
+let isBrowserClosed = false;
 
 (async () => {
   const browser = await puppeteer.launch({
     devtools: false, // you still can open devtools manually in browser
     headless: false,
     userDataDir: path.resolve(__dirname, '..', 'data'), // important to re-use data folder
+  });
+  browser.on('disconnected', () => {
+    isBrowserClosed = true;
   });
 
   let pageTab1: Page | null = await browser.newPage();
@@ -44,29 +51,26 @@ const knownPages = new Set();
   await pages[0].close();
 
   async function fetchPages() {
+    if (isBrowserClosed) { return; }
     const pages = await browser.pages();
+    if (isBrowserClosed) { return; }
     let next = '';
     for (const page of pages) {
       next += '<br/>';
+      const url = lastKnownUrl.get(page);
+      if (!url || url === 'about:blank') { continue; }
       const post = posts.get(page);
       const status = statuses.get(page);
       const statusTime = status ? new Date(status[1]).toTimeString().substring(0, 8) : '-';
-      const url = await page.url();
-      if (url === 'about:blank') { continue; }
       next += `${url}: [STATUS=${status?.[0] || '-'}:${statusTime}] [POST=${post || '-'}]`;
     }
-    await pageTab1?.evaluate((next) => {
-      const container = document.getElementById('pages');
-      if (!container) { return; }
-      container.innerHTML = next;
-    }, next);
+    lastPagesStatus = next;
   }
 
   async function detectNewTabs() {
     const pages = await browser.pages();
+    if (isBrowserClosed) { return; }
     for (const page of pages) {
-      const url = await page.url();
-      if (url === 'about:blank') { continue; }
       if (knownPages.has(page)) { continue; }
       knownPages.add(page);
       attachToNewTab(page);
@@ -92,15 +96,20 @@ const knownPages = new Set();
 
     page.on('close', () => {
       statuses.delete(page);
+      statusesMajor.delete(page);
       posts.delete(page);
       knownPages.delete(page);
+      lastKnownUrl.delete(page);
       page = null;
     });
     page.on('request', (request: HTTPRequest) => {
       if (!page) { return; }
+      if (request.frame() !== page.mainFrame()) { return; }
       if (!request.isNavigationRequest()) { return; }
+      const url = request.url();
       const post = request.postData();
       posts.set(page, post);
+      lastKnownUrl.set(page, url);
       fetchPages();
     });
     page.on('error', async () => {
@@ -145,7 +154,8 @@ const knownPages = new Set();
         }
         if (pageVariation === PAGE_VARIATIONS.BOT_DETECTED) {
           statusesMajor.set(page, 'BOT DETECTED');
-          statuses.set(page, ['BOT DETECTED - manual action required', Date.now()]);
+          statuses.set(page, ['BOT DETECTED - manual action required - SOUND', Date.now()]);
+          notifySuccess();
           fetchPages();
           return;
         }
@@ -174,6 +184,8 @@ const knownPages = new Set();
     pageTab1?.click('#start');
   };
 
+  await pageTab1?.exposeFunction('getLastPagesStatus', () => lastPagesStatus);
+
   pageTab1?.evaluate(() => {
     document.body.innerHTML = `
       0. Do not open anything on this first tab - this is your control panel<br/>
@@ -197,6 +209,14 @@ const knownPages = new Set();
       (document.getElementById('audio') as HTMLMediaElement)?.pause?.();
     });
 
+    async function updatePagesStatus() {
+      const container = document.getElementById('pages');
+      if (!container) { return; }
+      const next = await (window as any).getLastPagesStatus();
+      container.innerHTML = next;
+      setTimeout(updatePagesStatus, 500);
+    }
+    updatePagesStatus();
   });
   
   log('ready');
