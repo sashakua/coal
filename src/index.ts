@@ -5,7 +5,7 @@ import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import { analyzePage, PAGE_VARIATIONS } from './badStatus';
 import { singeltonFactory } from './singeltonFactory';
 import { log } from './utils';
-//const UserDataDirPlugin = require('puppeteer-extra-plugin-user-data-dir'); // important to re-use data folder
+const UserDataDirPlugin = require('puppeteer-extra-plugin-user-data-dir'); // important to re-use data folder
 const UserAgentOverride = require('puppeteer-extra-plugin-stealth/evasions/user-agent-override')
 
 const stealth = StealthPlugin()
@@ -17,7 +17,7 @@ const userAgent = UserAgentOverride({
 });
 
 puppeteer.use(stealth); // important to avoid detection that browser is automated
-//puppeteer.use(UserDataDirPlugin()); // important to re-use data folder
+puppeteer.use(UserDataDirPlugin()); // important to re-use data folder
 puppeteer.use(userAgent); // more control on user-agent
 
 log('start');
@@ -31,7 +31,7 @@ const knownPages = new Set();
   const browser = await puppeteer.launch({
     devtools: false, // you still can open devtools manually in browser
     headless: false,
-    //userDataDir: path.resolve(__dirname, '..', 'data'), // important to re-use data folder
+    userDataDir: path.resolve(__dirname, '..', 'data'), // important to re-use data folder
   });
 
   const pageTab1 = await browser.newPage();
