@@ -73,7 +73,6 @@ const knownPages = new Set();
   let autoId = 0;
   function attachToNewTab(page: Page | null) {
     const id = autoId++;
-    log('new tab attach', id);
     if (!page) { return; }
 
     async function reloadPlanned() {
