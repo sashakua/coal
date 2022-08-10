@@ -34,8 +34,11 @@ const knownPages = new Set();
     userDataDir: path.resolve(__dirname, '..', 'data'), // important to re-use data folder
   });
 
-  const pageTab1 = await browser.newPage();
-  await pageTab1.goto('about:blank');
+  let pageTab1: Page | null = await browser.newPage();
+  pageTab1.on('close', () => {
+    pageTab1 = null;
+  });
+  await pageTab1?.goto('about:blank');
 
   const pages = await browser.pages();
   await pages[0].close();
@@ -52,7 +55,7 @@ const knownPages = new Set();
       if (url === 'about:blank') { continue; }
       next += `${url}: [STATUS=${status?.[0] || '-'}:${statusTime}] [POST=${post || '-'}]`;
     }
-    await pageTab1.evaluate((next) => {
+    await pageTab1?.evaluate((next) => {
       const container = document.getElementById('pages');
       if (!container) { return; }
       container.innerHTML = next;
@@ -168,10 +171,10 @@ const knownPages = new Set();
   });
 
   const notifySuccess = () => {
-    pageTab1.click('#start');
+    pageTab1?.click('#start');
   };
 
-  pageTab1.evaluate(() => {
+  pageTab1?.evaluate(() => {
     document.body.innerHTML = `
       0. Do not open anything on this first tab - this is your control panel<br/>
       1. Login to that site on any new tab in this window<br/>
@@ -181,6 +184,7 @@ const knownPages = new Set();
       <audio id='audio' loop src='http://freesoundeffect.net/sites/default/files/multimedia-correct-04-sound-effect-94815064.mp3'></audio>
       <button id='start'>Play sound</button>
       <button id='stop'>Stop sound</button>
+      <br/><br/>
       <div id="pages"></div>
     `;
     
