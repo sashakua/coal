@@ -127,7 +127,7 @@ const knownPages = new Set();
           const oldStatusMajor = statusesMajor.get(page);
           if (!!oldStatusMajor && oldStatusMajor !== 'GOOD') {
             notifySuccess();
-            suffix = ' [was not good before - SOUND';
+            suffix = ' [was not good before - SOUND]';
           }
           statusesMajor.set(page, 'GOOD');
           statuses.set(page, ['GOOD' + suffix, Date.now()]);
