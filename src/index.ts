@@ -105,9 +105,7 @@ const knownPages = new Set();
       log('error');
       reloadPlanned();
     });
-    let autoId2 = 0;
     page.on('domcontentloaded', singeltonFactory(id, async () => {
-      const id2 = autoId2++;
       if (!page) { return; }
       const url = await page.url();
       if (url === 'chrome-error://chromewebdata/') {
