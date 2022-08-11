@@ -149,7 +149,12 @@ let isBrowserClosed = false;
         if (pageVariation === PAGE_VARIATIONS.UNDETECTED_CONTINUE_ANALYZE) {
           statuses.set(page, ['ANALYZING-WAIT', Date.now()]);
           fetchPages();
-          await page.waitForNetworkIdle();
+          try {
+            await page.waitForNetworkIdle();
+          } catch {
+            // for silent catching errors if 
+            log('confirmation that added catch helps to avoid crash');
+          }
           continue;
         }
         if (pageVariation === PAGE_VARIATIONS.BOT_DETECTED) {
