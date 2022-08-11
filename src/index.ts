@@ -91,7 +91,11 @@ let isBrowserClosed = false;
       if (!page) { return; }
       statuses.set(page, ['RELOADING', Date.now()]);
       fetchPages();
-      page.reload();
+      try {
+        await page.reload({ timeout: 0, waitUntil: 'domcontentloaded' });
+      } catch {
+        log('second confirmation that added catch helps to avoid crash');
+      }
     }
 
     page.on('close', () => {
@@ -150,7 +154,7 @@ let isBrowserClosed = false;
           statuses.set(page, ['ANALYZING-WAIT', Date.now()]);
           fetchPages();
           try {
-            await page.waitForNetworkIdle();
+            await page.waitForNetworkIdle({ });
           } catch {
             // for silent catching errors if 
             log('confirmation that added catch helps to avoid crash');
